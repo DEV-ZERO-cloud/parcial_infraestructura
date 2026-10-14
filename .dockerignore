@@ -1,0 +1,13 @@
+.git
+.github
+docs
+infraestructura
+.env
+.env.*
+*.pem
+*.key
+*.tfstate*
+.terraform
+__pycache__
+*.pyc
+README.md

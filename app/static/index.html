@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Herejía de Horus · Lectura</title>
+  <meta name="description" content="Sigue qué libros de La Herejía de Horus ya leíste, cuáles estás leyendo y cuál sigue.">
+  <meta name="theme-color" content="#0f0d0c">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%230f0d0c%27/%3E%3Crect x=%273%27 y=%273%27 width=%273%27 height=%2710%27 fill=%27%232f9488%27/%3E%3Crect x=%277%27 y=%275%27 width=%273%27 height=%278%27 fill=%27%23c9a24a%27/%3E%3Crect x=%2711%27 y=%274%27 width=%272%27 height=%279%27 fill=%27%233a332f%27/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead">
+    <h1>La Herejía<br>de Horus</h1>
+    <div class="tally" aria-live="polite">
+      <p class="tally-num"><span id="countRead">0</span><span class="of">/<span id="countTotal">54</span></span></p>
+      <p class="tally-label" id="tallyLabel">libros leídos</p>
+    </div>
+  </header>
+
+  <section class="shelf-wrap" aria-label="Estantería de la serie">
+    <ol class="shelf" id="shelf"></ol>
+    <ul class="legend">
+      <li><i class="sw sw-todo"></i>Pendiente</li>
+      <li><i class="sw sw-reading"></i>Leyendo</li>
+      <li><i class="sw sw-read"></i>Leído</li>
+    </ul>
+  </section>
+
+  <section class="next" id="next" aria-live="polite"></section>
+
+  <section class="tools">
+    <div class="filters" role="group" aria-label="Filtrar por estado" id="filters">
+      <button type="button" data-f="all" aria-pressed="true">Todos</button>
+      <button type="button" data-f="todo" aria-pressed="false">Pendientes</button>
+      <button type="button" data-f="reading" aria-pressed="false">Leyendo</button>
+      <button type="button" data-f="read" aria-pressed="false">Leídos</button>
+    </div>
+    <label class="search">
+      <span class="sr">Buscar por título o autor</span>
+      <input type="search" id="q" placeholder="Buscar título o autor" autocomplete="off">
+    </label>
+  </section>
+
+  <ol class="books" id="books"></ol>
+  <p class="empty" id="empty" hidden>Ningún libro coincide. Cambia el filtro o borra la búsqueda.</p>
+
+  <section class="add">
+    <h2>Agregar un libro</h2>
+    <p class="hint">Para novelas cortas, audios o libros que no están en la lista.</p>
+    <form id="addForm" autocomplete="off">
+      <label>Título <input name="title" required maxlength="120"></label>
+      <label>Autor <input name="author" maxlength="80"></label>
+      <button type="submit">Agregar libro</button>
+    </form>
+  </section>
+
+  <footer>
+    <p>Tu progreso se guarda solo en este navegador.</p>
+    <button type="button" class="link" id="reset">Borrar todo el progreso</button>
+    <p class="build" id="build"></p>
+  </footer>
+
+  <script src="books.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
