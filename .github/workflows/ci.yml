@@ -1,0 +1,63 @@
+name: Validar infraestructura
+
+on:
+  pull_request:
+    paths:
+      - "infraestructura/**"
+      - ".github/workflows/ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infraestructura/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform y Checkov
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infraestructura
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Preparar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Detectar configuración Terraform
+        id: detect
+        working-directory: .
+        run: |
+          if find infraestructura -maxdepth 1 -type f -name '*.tf' -size +0c -print -quit | grep -q .; then
+            echo "has_config=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_config=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verificar formato
+        run: terraform fmt -check -recursive
+
+      - name: Inicializar y validar
+        if: steps.detect.outputs.has_config == 'true'
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Análisis Checkov
+        if: steps.detect.outputs.has_config == 'true'
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infraestructura
+          framework: terraform
+
+      - name: Informar configuración pendiente
+        if: steps.detect.outputs.has_config != 'true'
+        run: 'echo "Validación omitida: infraestructura/ aún no contiene configuración Terraform."'
