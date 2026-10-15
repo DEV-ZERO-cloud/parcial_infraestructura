@@ -169,12 +169,14 @@ Guía paso a paso: [`docs/configuracion_github.md`](docs/configuracion_github.md
 | Repositorio | `AWS_REGION` | `us-east-1` |
 | Repositorio | `ECR_REGISTRY` | `704932818752.dkr.ecr.us-east-1.amazonaws.com` |
 | Repositorio | `ECR_REPOSITORY` | `estrella-app` |
+| Repositorio | `TF_APPLY_READY` | `true` |
+| Repositorio | `TF_ROLE_ARN` | `arn:aws:iam::704932818752:role/gh-estrella-tf` |
 | Environment `test` | `AWS_ROLE_ARN` | ARN del rol IAM para desplegar |
 | Environment `test` | `ECS_CLUSTER` / `ECS_SERVICE` / `TASK_FAMILY` | `estrella-pruebas` / `app` / `estrella-pruebas` |
-| Environment `test` | `APP_URL` | `http://estrella-pruebas-835559274.us-east-1.elb.amazonaws.com` |
+| Environment `test` | `ALB_NAME` | `estrella-pruebas` |
 | Environment `production` | `AWS_ROLE_ARN` | ARN del rol IAM para desplegar |
 | Environment `production` | `ECS_CLUSTER` / `ECS_SERVICE` / `TASK_FAMILY` | `estrella-produccion` / `app` / `estrella-produccion` |
-| Environment `production` | `APP_URL` | `http://estrella-produccion-1723418970.us-east-1.elb.amazonaws.com` |
+| Environment `production` | `ALB_NAME` | `estrella-produccion` |
 
 **Secretos:** no se usan credenciales estáticas. La autenticación a AWS es por
 OIDC (`permissions: id-token: write` en el workflow); no hay ninguna clave de
