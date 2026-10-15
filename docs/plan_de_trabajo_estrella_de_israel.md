@@ -19,29 +19,29 @@ digest--- al ambiente productivo.
 
 ## 1. Entregables obligatorios
 
--   [ ] Repositorio público o accesible para evaluación en GitHub.
--   [ ] Aplicación mínima contenerizada y `Dockerfile`.
--   [ ] Infraestructura de los ambientes de pruebas y producción
+-   [x] Repositorio público o accesible para evaluación en GitHub.
+-   [x] Aplicación mínima contenerizada y `Dockerfile`.
+-   [x] Infraestructura de los ambientes de pruebas y producción
     definida con Terraform.
--   [ ] Registro de imágenes de AWS o Azure.
--   [ ] Workflow de GitHub Actions que construya la imagen una sola vez
+-   [x] Registro de imágenes de AWS o Azure.
+-   [x] Workflow de GitHub Actions que construya la imagen una sola vez
     y la etiquete con el identificador del commit.
--   [ ] Análisis de la imagen con Trivy antes de desplegarla.
--   [ ] Despliegue de la imagen en el ambiente de pruebas.
--   [ ] Prueba HTTP automática del ambiente de pruebas.
--   [ ] Aprobación manual antes del despliegue en producción, mediante
+-   [x] Análisis de la imagen con Trivy antes de desplegarla.
+-   [x] Despliegue de la imagen en el ambiente de pruebas.
+-   [x] Prueba HTTP automática del ambiente de pruebas.
+-   [x] Aprobación manual antes del despliegue en producción, mediante
     GitHub Environments.
--   [ ] Promoción a producción de la misma imagen, sin reconstruirla.
--   [ ] Evidencia de que pruebas y producción usan el mismo digest.
--   [ ] Ejecución de Checkov sobre Terraform; además, `terraform fmt` y
+-   [x] Promoción a producción de la misma imagen, sin reconstruirla.
+-   [x] Evidencia de que pruebas y producción usan el mismo digest.
+-   [x] Ejecución de Checkov sobre Terraform; además, `terraform fmt` y
     `terraform validate`.
--   [ ] README técnico con arquitectura, prerrequisitos, variables,
+-   [x] README técnico con arquitectura, prerrequisitos, variables,
     configuración de secretos, instrucciones, URL o procedimiento de
     prueba, evidencias, limitaciones y destrucción de recursos.
--   [ ] Diagrama de arquitectura.
--   [ ] Evidencias de workflows, análisis de seguridad, prueba HTTP,
+-   [x] Diagrama de arquitectura.
+-   [x] Evidencias de workflows, análisis de seguridad, prueba HTTP,
     aprobación y despliegues.
--   [ ] Registro breve de decisiones, limitaciones y mejoras futuras.
+-   [x] Registro breve de decisiones, limitaciones y mejoras futuras.
 
 ## 2. Distribución del trabajo entre cuatro personas
 
@@ -55,20 +55,20 @@ equipo.
 **Responsabilidad principal:** Terraform y configuración de los
 ambientes.
 
--   [ ] Elegir con el equipo AWS o Azure y confirmar que todos tienen
+-   [x] Elegir con el equipo AWS o Azure y confirmar que todos tienen
     acceso.
--   [ ] Definir la arquitectura mínima de pruebas y producción.
--   [ ] Crear los recursos necesarios y el registro de contenedores con
+-   [x] Definir la arquitectura mínima de pruebas y producción.
+-   [x] Crear los recursos necesarios y el registro de contenedores con
     Terraform.
--   [ ] Parametrizar los ambientes para evitar duplicación innecesaria.
--   [ ] Añadir etiquetas/tags que identifiquen equipo, proyecto y
+-   [x] Parametrizar los ambientes para evitar duplicación innecesaria.
+-   [x] Añadir etiquetas/tags que identifiquen equipo, proyecto y
     ambiente.
--   [ ] Establecer límites de recursos de bajo costo y revisar los
+-   [x] Establecer límites de recursos de bajo costo y revisar los
     costos potenciales.
--   [ ] Ejecutar `terraform fmt`, `terraform validate` y Checkov.
--   [ ] Entregar instrucciones de inicialización, despliegue y
+-   [x] Ejecutar `terraform fmt`, `terraform validate` y Checkov.
+-   [x] Entregar instrucciones de inicialización, despliegue y
     destrucción.
--   [ ] Proporcionar al responsable de CI/CD los nombres de recursos,
+-   [x] Proporcionar al responsable de CI/CD los nombres de recursos,
     salidas y variables necesarias.
 
 **Entregable individual:** código Terraform funcional, validaciones y
@@ -79,20 +79,20 @@ evidencia de infraestructura aplicada.
 **Responsabilidad principal:** aplicación mínima y artefacto
 reproducible.
 
--   [ ] Crear o adaptar una aplicación HTTP sencilla que responda en una
+-   [x] Crear o adaptar una aplicación HTTP sencilla que responda en una
     ruta de salud, por ejemplo `/health`.
--   [ ] Hacer que la aplicación muestre una versión o identificador del
+-   [x] Hacer que la aplicación muestre una versión o identificador del
     commit para facilitar la comprobación.
--   [ ] Crear un `Dockerfile` mínimo, reproducible y con buenas
+-   [x] Crear un `Dockerfile` mínimo, reproducible y con buenas
     prácticas de seguridad.
--   [ ] Evitar incluir credenciales, tokens o archivos `.env` con
+-   [x] Evitar incluir credenciales, tokens o archivos `.env` con
     secretos en la imagen.
--   [ ] Probar localmente la construcción y ejecución del contenedor.
--   [ ] Acordar con Persona 1 el registro de imágenes y con Persona 3 el
+-   [x] Probar localmente la construcción y ejecución del contenedor.
+-   [x] Acordar con Persona 1 el registro de imágenes y con Persona 3 el
     nombre de imagen y las etiquetas.
--   [ ] Comprobar que la imagen publicada queda identificada por el
+-   [x] Comprobar que la imagen publicada queda identificada por el
     commit y que se puede recuperar su digest.
--   [ ] Entregar instrucciones para ejecutar la aplicación y probar
+-   [x] Entregar instrucciones para ejecutar la aplicación y probar
     `/health`.
 
 **Entregable individual:** código de aplicación, `Dockerfile`, prueba
@@ -102,21 +102,21 @@ local y datos del artefacto publicado.
 
 **Responsabilidad principal:** automatización en GitHub Actions.
 
--   [ ] Crear o configurar los workflows y sus permisos mínimos.
--   [ ] Construir la imagen una sola vez por commit y etiquetarla con el
+-   [x] Crear o configurar los workflows y sus permisos mínimos.
+-   [x] Construir la imagen una sola vez por commit y etiquetarla con el
     SHA del commit.
--   [ ] Ejecutar Trivy antes de permitir el despliegue.
--   [ ] Publicar la imagen en el registro de AWS o Azure.
--   [ ] Desplegar en pruebas usando la imagen ya construida.
--   [ ] Ejecutar una prueba HTTP automática contra el ambiente de
+-   [x] Ejecutar Trivy antes de permitir el despliegue.
+-   [x] Publicar la imagen en el registro de AWS o Azure.
+-   [x] Desplegar en pruebas usando la imagen ya construida.
+-   [x] Ejecutar una prueba HTTP automática contra el ambiente de
     pruebas.
--   [ ] Configurar un ambiente de GitHub llamado `production` con
+-   [x] Configurar un ambiente de GitHub llamado `production` con
     aprobación requerida, si está disponible en la configuración del
     repositorio.
--   [ ] Después de la aprobación, promover/desplegar en producción la
+-   [x] Después de la aprobación, promover/desplegar en producción la
     misma imagen por digest; no volver a construirla.
--   [ ] Registrar en los logs el tag y digest usados en cada ambiente.
--   [ ] Validar que cambios en Terraform activen las comprobaciones de
+-   [x] Registrar en los logs el tag y digest usados en cada ambiente.
+-   [x] Validar que cambios en Terraform activen las comprobaciones de
     infraestructura correspondientes y que no se expongan secretos en
     logs.
 
@@ -128,21 +128,21 @@ recorrido pruebas → validación → aprobación → producción.
 **Responsabilidad principal:** comprobar los criterios de evaluación y
 consolidar evidencias.
 
--   [ ] Crear el esqueleto del README y una lista de verificación común.
--   [ ] Configurar o verificar GitHub Secrets/OIDC según la nube
+-   [x] Crear el esqueleto del README y una lista de verificación común.
+-   [x] Configurar o verificar GitHub Secrets/OIDC según la nube
     seleccionada; nunca guardar credenciales en el repositorio.
--   [ ] Revisar que el repositorio no contenga claves, tokens ni
+-   [x] Revisar que el repositorio no contenga claves, tokens ni
     archivos sensibles.
--   [ ] Ejecutar o coordinar Checkov y Trivy; registrar los resultados y
+-   [x] Ejecutar o coordinar Checkov y Trivy; registrar los resultados y
     corregir hallazgos relevantes.
--   [ ] Preparar la prueba HTTP de salud y verificar la respuesta del
+-   [x] Preparar la prueba HTTP de salud y verificar la respuesta del
     ambiente de pruebas.
--   [ ] Recopilar capturas o logs de la construcción, publicación,
+-   [x] Recopilar capturas o logs de la construcción, publicación,
     despliegue, aprobación y resultado final.
--   [ ] Comparar el digest desplegado en pruebas con el de producción.
--   [ ] Crear el diagrama de arquitectura y documentar variables,
+-   [x] Comparar el digest desplegado en pruebas con el de producción.
+-   [x] Crear el diagrama de arquitectura y documentar variables,
     decisiones, limitaciones y mejoras.
--   [ ] Revisar que los enlaces del repositorio, aplicación y evidencias
+-   [x] Revisar que los enlaces del repositorio, aplicación y evidencias
     funcionen.
 -   [ ] Coordinar una demostración final de extremo a extremo.
 
@@ -281,24 +281,24 @@ digest. Evitar agregar funcionalidades no exigidas.
 
 ## 5. Criterios de aceptación final
 
--   [ ] El repositorio de GitHub contiene todo el código necesario.
--   [ ] Terraform crea los recursos de ambos ambientes y pasa `fmt` y
+-   [x] El repositorio de GitHub contiene todo el código necesario.
+-   [x] Terraform crea los recursos de ambos ambientes y pasa `fmt` y
     `validate`.
--   [ ] Checkov se ejecuta sobre Terraform y sus resultados quedan
+-   [x] Checkov se ejecuta sobre Terraform y sus resultados quedan
     documentados.
--   [ ] GitHub Actions construye la imagen una sola vez por commit.
--   [ ] Trivy analiza la imagen antes del despliegue.
--   [ ] La imagen se publica en un registro de AWS o Azure.
--   [ ] La aplicación responde correctamente a la prueba HTTP en
+-   [x] GitHub Actions construye la imagen una sola vez por commit.
+-   [x] Trivy analiza la imagen antes del despliegue.
+-   [x] La imagen se publica en un registro de AWS o Azure.
+-   [x] La aplicación responde correctamente a la prueba HTTP en
     pruebas.
--   [ ] Producción requiere aprobación antes del despliegue.
--   [ ] No se reconstruye la imagen para producción.
--   [ ] El digest de pruebas es idéntico al de producción y existe
+-   [x] Producción requiere aprobación antes del despliegue.
+-   [x] No se reconstruye la imagen para producción.
+-   [x] El digest de pruebas es idéntico al de producción y existe
     evidencia verificable.
--   [ ] No hay credenciales almacenadas en el repositorio.
--   [ ] Los recursos tienen etiquetas de equipo/proyecto/ambiente y
+-   [x] No hay credenciales almacenadas en el repositorio.
+-   [x] Los recursos tienen etiquetas de equipo/proyecto/ambiente y
     límites razonables de costo.
--   [ ] README, diagrama, URLs, evidencias y procedimiento de
+-   [x] README, diagrama, URLs, evidencias y procedimiento de
     destrucción están completos.
 -   [ ] El equipo puede repetir la demostración y explicar las
     decisiones técnicas.
@@ -331,38 +331,27 @@ con secretos al repositorio.
 
 ## 7. Registro de decisiones y bloqueos
 
-  -------------------------------------------------------------------------
-  Tema              Decisión / estado   Responsable       Evidencia o
-                                                          acción pendiente
-  ----------------- ------------------- ----------------- -----------------
-  Nube elegida      Por definir al      Todos             Confirmar acceso
-  (AWS/Azure)       inicio                                y presupuesto
+| Tema | Decisión | Responsable | Evidencia |
+|---|---|---|---|
+| Nube elegida | **AWS**, región `us-east-1` (cuenta de laboratorio) | Todos | `docs/evidencias/Outputs.txt`, `docs/evidencias/aws_tags.jpeg` |
+| Registro de imágenes | Amazon **ECR** `estrella-app`: tags inmutables, escaneo al subir, cifrado KMS y ciclo de vida de 20 imágenes | Personas 1 y 2 | `704932818752.dkr.ecr.us-east-1.amazonaws.com/estrella-app` |
+| Servicio de ejecución | **ECS Fargate** (0.25 vCPU / 512 MB, 1 tarea por ambiente) con **ALB** público :80; sin NAT Gateway para minimizar costos | Persona 1 | `docs/arquitectura.md`, `docs/evidencias/terraform_apply.txt` |
+| Autenticación de GitHub Actions | **OIDC** (`id-token: write`, sin claves estáticas); el rol se creó manualmente en AWS, fuera de Terraform | Personas 1 y 3 | Paso «Configurar credenciales AWS (OIDC)» del [run verde 38676879961](https://github.com/DEV-ZERO-cloud/parcial_infraestructura/actions/runs/38676879961) |
+| Ruta de salud HTTP | `/health` responde `{"status":"ok","app":"horus-tracker","version":"1.0.0","commit":"<sha>"}`; el commit permite comprobar qué imagen corre en cada ambiente | Personas 2 y 3 | `docs/evidencias/http_final_ambos_ambientes.txt` |
+| Política de Trivy | Severidades HIGH/CRITICAL con `--exit-code 1` y `ignore-unfixed`; un hallazgo bloquea ambos despliegues | Personas 3 y 4 | Paso «Analizar imagen por digest con Trivy» del run verde |
+| Digest de pruebas y producción | El job `resumen-promocion` comparó el digest publicado con el confirmado en cada ambiente: **idénticos** (commit `94950b4`) | Personas 3 y 4 | `docs/evidencias/run_verde_38676879961.json`, `docs/evidencias/deployments_timeline.txt` |
+| Destrucción de recursos | Documentada en el README con precauciones (`terraform destroy`, `force_delete` del ECR, verificación de cuenta) | Personas 1 y 4 | README, sección «Destrucción de recursos» |
 
-  Registro de       Por definir         Personas 1 y 2    Nombre y URI del
-  imágenes                                                registro
+**Bloqueos resueltos durante el desarrollo:**
 
-  Servicio de       Por definir según   Persona 1         Recursos de
-  ejecución         la nube                               pruebas y
-                                                          producción
-
-  Autenticación de  OIDC preferido;     Personas 1 y 3    Confirmar
-  GitHub Actions    Secrets si es                         permisos mínimos
-                    necesario                             
-
-  Ruta de salud     `/health`           Personas 2 y 3    Confirmar
-  HTTP              (propuesta)                           respuesta
-                                                          esperada
-
-  Política de Trivy Definir umbral y    Personas 3 y 4    Guardar reporte
-                    documentar                            
-                    excepciones                           
-
-  Digest de pruebas Pendiente de        Personas 3 y 4    Registrar ambos y
-  y producción      ejecución                             comparar
-
-  Destrucción de    Pendiente de        Personas 1 y 4    Incluir comando y
-  recursos          documentar/probar                     precauciones
-  -------------------------------------------------------------------------
+1. Los primeros runs de `deploy.yml` fallaban en «Set up job» y luego en la
+   autenticación OIDC (faltaban las variables de Actions y el rol). Se
+   configuraron y el re-run del commit `94950b4` terminó verde el 2026-10-15
+   (run 38676879961).
+2. La infraestructura se destruyó y se re-creó con URLs de ALB nuevas; se
+   actualizó `APP_URL` en los Environments y se guardó el output vigente en
+   `docs/evidencias/Outputs.txt` (el `terraform_output.txt` anterior queda como
+   evidencia del primer apply).
 
 ## 8. Orden recomendado para la demostración
 

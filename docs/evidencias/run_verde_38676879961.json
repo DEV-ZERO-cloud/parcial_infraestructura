@@ -1,0 +1,66 @@
+{
+  "_descripcion": "Captura de la API de GitHub del run verde del pipeline 'Construir y promover imagen'. Muestra la secuencia completa: build unico -> Trivy -> publicacion en ECR -> deploy en test -> prueba HTTP -> aprobacion manual -> promocion del mismo digest a production -> comparacion de digests. Capturado 2026-10-15 via API publica.",
+  "run": {
+    "id": 38676879961,
+    "name": "Construir y promover imagen",
+    "event": "push",
+    "status": "completed",
+    "conclusion": "success",
+    "branch": "main",
+    "head_sha": "94950b4782d2c64af67b2d68e677c57f03366697",
+    "html_url": "https://github.com/DEV-ZERO-cloud/parcial_infraestructura/actions/runs/38676879961",
+    "created_at": "2026-10-15T03:33:26Z",
+    "run_started_at": "2026-10-15T04:01:14Z",
+    "updated_at": "2026-10-15T04:13:06Z"
+  },
+  "jobs": [
+    {
+      "name": "Construir, publicar y analizar",
+      "conclusion": "success",
+      "started_at": "2026-10-15T04:01:18Z",
+      "completed_at": "2026-10-15T04:02:32Z",
+      "steps_relevantes": {
+        "Configurar credenciales AWS (OIDC)": "04:01:28Z",
+        "Iniciar sesión en Amazon ECR": "04:01:28Z",
+        "Construir y publicar una vez en ECR": "04:01:47Z",
+        "Confirmar digest en ECR": "04:01:55Z",
+        "Analizar imagen por digest con Trivy": "04:02:01Z"
+      },
+      "nota": "Build UNICO con tag = SHA del commit; el digest devuelto por ECR se verifica contra el digest del build y Trivy analiza la imagen referenciada por digest (bloquea con HIGH/CRITICAL)."
+    },
+    {
+      "name": "Desplegar y probar en testing",
+      "conclusion": "success",
+      "environment": "test",
+      "started_at": "2026-10-15T04:02:35Z",
+      "completed_at": "2026-10-15T04:05:37Z",
+      "steps_relevantes": {
+        "Desplegar el digest en ECS": "04:02:38Z -> 04:05:34Z (registro de revision + update-service + espera de estabilidad + verificacion de digest)",
+        "Verificar salud HTTP": "04:05:34Z"
+      },
+      "nota": "Despliega la referencia inmutable <ecr>/estrella-app@sha256:<digest> ya construida; NO reconstruye. Verifica que el digest desplegado coincida con el publicado y ejecuta curl a APP_URL/health."
+    },
+    {
+      "name": "Promover el mismo digest a production",
+      "conclusion": "success",
+      "environment": "production",
+      "started_at": "2026-10-15T04:10:00Z",
+      "completed_at": "2026-10-15T04:12:59Z",
+      "steps_relevantes": {
+        "Promover el mismo digest a ECS": "04:10:02Z -> 04:12:57Z",
+        "Verificar salud HTTP en production": "04:12:57Z"
+      },
+      "nota": "El job empieza ~5 minutos despues de terminar testing: la diferencia es la espera de la aprobacion manual del Environment production (required reviewers). Usa la MISMA salida image_ref del build; no hay ningun paso de build."
+    },
+    {
+      "name": "Resumen de promoción por digest",
+      "conclusion": "success",
+      "started_at": "2026-10-15T04:13:02Z",
+      "completed_at": "2026-10-15T04:13:05Z",
+      "steps_relevantes": {
+        "Comparar digests de ambos ambientes": "04:13:03Z"
+      },
+      "nota": "Compara digest publicado en ECR vs digest confirmado en testing vs digest confirmado en production; fallaria si difirieran. Termino en success: los tres digests son identicos."
+    }
+  ]
+}

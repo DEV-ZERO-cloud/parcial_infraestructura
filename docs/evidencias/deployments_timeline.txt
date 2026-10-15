@@ -1,0 +1,25 @@
+Cronología de deployments de GitHub (API de GitHub, capturada 2026-10-15)
+========================================================================
+Fuente: GET /repos/DEV-ZERO-cloud/parcial_infraestructura/deployments
+Run: https://github.com/DEV-ZERO-cloud/parcial_infraestructura/actions/runs/38676879961
+
+Deployment environment=test (commit 94950b4, rama main)
+  2026-10-15T04:02:33Z  creado por el job "Desplegar y probar en testing"
+  2026-10-15T04:02:36Z  in_progress
+  2026-10-15T04:05:37Z  success  <- despliegue en pruebas + prueba HTTP OK
+
+Deployment environment=production (commit 94950b4, rama main)
+  2026-10-15T04:05:37Z  creado por el job "Promover el mismo digest a production"
+  ...                    ESPERA DE APROBACIÓN MANUAL (required reviewers)
+  2026-10-15T04:09:59Z  queued   <- un revisor aprobó el despliegue
+  2026-10-15T04:10:01Z  in_progress
+  2026-10-15T04:13:00Z  success  <- promoción a producción + prueba HTTP OK
+
+Observaciones:
+- Entre la creación del deployment de producción (04:05:37Z) y su
+  puesta en cola (04:09:59Z) pasaron ~4 minutos y 22 segundos: es la
+  ventana de aprobación manual exigida por el Environment `production`
+  (protection rule: required_reviewers).
+- El job de producción solo empezó DESPUÉS de la aprobación; no existe
+  ningún paso que se auto-apruebe.
+- Ambos deployments se completaron con success sobre el mismo commit.

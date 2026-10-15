@@ -1,0 +1,26 @@
+Outputs:
+
+app_urls = {
+  "produccion" = "http://estrella-produccion-1723418970.us-east-1.elb.amazonaws.com"
+  "pruebas" = "http://estrella-pruebas-835559274.us-east-1.elb.amazonaws.com"
+}
+aws_region = "us-east-1"
+ecr_repository_name = "estrella-app"
+ecr_repository_url = "704932818752.dkr.ecr.us-east-1.amazonaws.com/estrella-app"
+ecs_clusters = {
+  "produccion" = "estrella-produccion"
+  "pruebas" = "estrella-pruebas"
+}
+ecs_services = {
+  "produccion" = "app"
+  "pruebas" = "app"
+}
+github_actions_role_arn = ""
+health_urls = {
+  "produccion" = "http://estrella-produccion-1723418970.us-east-1.elb.amazonaws.com/health"
+  "pruebas" = "http://estrella-pruebas-835559274.us-east-1.elb.amazonaws.com/health"
+}
+task_definition_families = {
+  "produccion" = "estrella-produccion"
+  "pruebas" = "estrella-pruebas"
+}
