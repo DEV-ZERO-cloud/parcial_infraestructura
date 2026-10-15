@@ -61,3 +61,41 @@ jobs:
       - name: Informar configuración pendiente
         if: steps.detect.outputs.has_config != 'true'
         run: 'echo "Validación omitida: infraestructura/ aún no contiene configuración Terraform."'
+
+  terraform-apply:
+    name: Aplicar infraestructura con Terraform
+    needs: terraform
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.TF_APPLY_READY == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: terraform-apply
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: infraestructura
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Preparar Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Configurar credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.TF_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Inicializar con backend remoto
+        run: terraform init -input=false
+
+      - name: Plan de cambios
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Aplicar cambios
+        run: terraform apply -auto-approve tfplan

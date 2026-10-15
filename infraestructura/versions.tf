@@ -8,8 +8,15 @@ terraform {
     }
   }
 
-  # Estado local por simplicidad para el taller.
-  # Mejora futura documentada: backend "s3" con bloqueo DynamoDB/S3 lockfile.
+  # Estado remoto en S3 con bloqueo DynamoDB para permitir terraform apply desde CI.
+  # El bucket y la tabla se crean una sola vez antes de migrar el estado local.
+  backend "s3" {
+    bucket         = "estrella-tfstate-704932818752"
+    key            = "parcial/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "estrella-tfstate-lock"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
