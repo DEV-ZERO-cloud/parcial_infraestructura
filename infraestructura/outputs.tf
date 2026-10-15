@@ -38,7 +38,12 @@ output "health_urls" {
   value       = { for k, v in aws_lb.app : k => "http://${v.dns_name}/health" }
 }
 
-output "github_actions_role_arn" {
-  description = "ARN del rol IAM OIDC para GitHub Actions (AWS_ROLE_ARN). Vacío si no se definió github_repo o si se usa LabRole."
-  value       = try(aws_iam_role.github[0].arn, "")
+output "cicd_role_arn" {
+  description = "ARN del rol de CI/CD (GitHub Actions: build, despliegue y promoción por digest)."
+  value       = aws_iam_role.cicd.arn
+}
+
+output "terraform_role_arn" {
+  description = "ARN del rol de Terraform (GitHub Actions: plan y apply de infraestructura)."
+  value       = aws_iam_role.tf_apply.arn
 }

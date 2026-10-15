@@ -40,16 +40,28 @@ variable "placeholder_image" {
   default     = "public.ecr.aws/nginx/nginx-unprivileged:stable"
 }
 
-variable "github_repo" {
-  description = "Repositorio de GitHub en formato ORG/REPO. Si se define y no se usa LabRole, se crea el rol OIDC para GitHub Actions."
+variable "github_owner" {
+  description = "Cuenta u organización de GitHub propietaria del repositorio."
   type        = string
-  default     = ""
+  default     = "DEV-ZERO-cloud"
 }
 
-variable "create_github_oidc_provider" {
-  description = "Crear el proveedor OIDC de GitHub en la cuenta. Poner false si ya existe en la cuenta de AWS."
-  type        = bool
-  default     = true
+variable "github_repository" {
+  description = "Nombre del repositorio de GitHub (sin el propietario)."
+  type        = string
+  default     = "parcial_infraestructura"
+}
+
+variable "github_owner_id" {
+  description = "ID numérico del propietario en GitHub (formato inmutable del claim sub de OIDC)."
+  type        = string
+  default     = "183999424"
+}
+
+variable "github_repo_id" {
+  description = "ID numérico del repositorio en GitHub (formato inmutable del claim sub de OIDC)."
+  type        = string
+  default     = "1419267732"
 }
 
 variable "existing_iam_role_arn" {

@@ -1,7 +1,2 @@
 aws_region = "us-east-1"
 
-# Dejar vacío: el proveedor OIDC y los roles de CI/CD (gh-estrella-cicd,
-# gh-estrella-tf) se gestionan fuera de Terraform. Definirlo haría que
-# Terraform intente crear un proveedor OIDC que ya existe en la cuenta.
-github_repo = ""
-
