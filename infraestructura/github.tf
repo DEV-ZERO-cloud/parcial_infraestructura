@@ -1,3 +1,4 @@
+
 locals {
   github_sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repo_id}"
 }
@@ -264,6 +265,7 @@ data "aws_iam_policy_document" "tf_apply" {
       "ecr:TagResource",
       "ecr:UntagResource",
     ]
+
     resources = ["arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/estrella-*"]
   }
 
@@ -288,6 +290,7 @@ data "aws_iam_policy_document" "tf_apply" {
       "iam:CreateRole",
       "iam:DeleteRole",
       "iam:GetRole",
+      "iam:GetRolePolicy",
       "iam:ListRoles",
       "iam:ListRolePolicies",
       "iam:ListAttachedRolePolicies",
