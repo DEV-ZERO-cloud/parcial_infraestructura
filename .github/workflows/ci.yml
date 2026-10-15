@@ -95,7 +95,7 @@ jobs:
         run: terraform init -input=false
 
       - name: Plan de cambios
-        run: terraform plan -input=false -out=tfplan
+        run: terraform plan -input=false -refresh=false -out=tfplan
 
       - name: Aplicar cambios
         run: terraform apply -auto-approve tfplan
