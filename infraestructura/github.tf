@@ -1,5 +1,6 @@
 
 locals {
+
   github_sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repo_id}"
 }
 
@@ -57,6 +58,7 @@ data "aws_iam_policy_document" "github_cicd_assume" {
     }
   }
 }
+
 
 data "aws_iam_policy_document" "github_tf_assume" {
   statement {
@@ -169,6 +171,7 @@ resource "aws_iam_role_policy" "cicd" {
   policy = data.aws_iam_policy_document.cicd.json
 }
 
+
 data "aws_iam_policy_document" "tf_apply" {
   statement {
     sid       = "EstadoTerraformS3"
@@ -238,6 +241,7 @@ data "aws_iam_policy_document" "tf_apply" {
       "elasticloadbalancing:DescribeListeners",
       "elasticloadbalancing:DescribeLoadBalancerAttributes",
       "elasticloadbalancing:DescribeTargetGroupAttributes",
+      "elasticloadbalancing:DescribeTags",
       "elasticloadbalancing:AddTags",
       "elasticloadbalancing:RemoveTags",
     ]
@@ -251,6 +255,19 @@ data "aws_iam_policy_document" "tf_apply" {
   }
 
   statement {
+    sid = "DefinicionesDeTareaECS"
+    actions = [
+      "ecs:RegisterTaskDefinition",
+      "ecs:DeregisterTaskDefinition",
+      "ecs:DescribeTaskDefinition",
+      "ecs:ListTaskDefinitions",
+      "ecs:ListTaskDefinitionFamilies",
+      "ecs:DeleteTaskDefinitions",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
     sid = "RepositorioECR"
     actions = [
       "ecr:CreateRepository",
@@ -258,6 +275,7 @@ data "aws_iam_policy_document" "tf_apply" {
       "ecr:DescribeRepositories",
       "ecr:SetRepositoryPolicy",
       "ecr:GetRepositoryPolicy",
+      "ecr:GetLifecyclePolicy",
       "ecr:PutLifecyclePolicy",
       "ecr:DeleteLifecyclePolicy",
       "ecr:BatchDeleteImage",
@@ -265,7 +283,6 @@ data "aws_iam_policy_document" "tf_apply" {
       "ecr:TagResource",
       "ecr:UntagResource",
     ]
-
     resources = ["arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/estrella-*"]
   }
 
