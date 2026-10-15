@@ -74,7 +74,7 @@ jobs:
         run: echo "TRIVY_PASSWORD=$(aws ecr get-login-password)" >> "$GITHUB_ENV"
 
       - name: Analizar imagen por digest con Trivy
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         env:
           TRIVY_USERNAME: AWS
         with:
