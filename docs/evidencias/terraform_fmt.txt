@@ -1,0 +1,2 @@
+﻿$ terraform -chdir=infraestructura fmt -check -recursive
+Resultado: OK (Exit code: 0)
