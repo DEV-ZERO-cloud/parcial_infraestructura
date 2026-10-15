@@ -1,6 +1,5 @@
 
 locals {
-
   github_sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repo_id}"
 }
 
@@ -171,7 +170,6 @@ resource "aws_iam_role_policy" "cicd" {
   policy = data.aws_iam_policy_document.cicd.json
 }
 
-
 data "aws_iam_policy_document" "tf_apply" {
   statement {
     sid       = "EstadoTerraformS3"
@@ -242,6 +240,8 @@ data "aws_iam_policy_document" "tf_apply" {
       "elasticloadbalancing:DescribeLoadBalancerAttributes",
       "elasticloadbalancing:DescribeTargetGroupAttributes",
       "elasticloadbalancing:DescribeTags",
+      "elasticloadbalancing:DescribeListenerAttributes",
+      "elasticloadbalancing:ModifyListenerAttributes",
       "elasticloadbalancing:AddTags",
       "elasticloadbalancing:RemoveTags",
     ]
@@ -345,6 +345,7 @@ data "aws_iam_policy_document" "tf_apply" {
     ]
     resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"]
   }
+
 
   statement {
     sid       = "ListarProveedoresOIDC"
