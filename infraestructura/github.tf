@@ -1,13 +1,4 @@
-# ---------------------------------------------------------------------------
-# Identidad de GitHub Actions en AWS: proveedor OIDC y roles de CI/CD.
-# Todo el IAM del pipeline vive en este archivo; ningún rol se gestiona a mano.
-# Los import blocks adoptan los recursos creados durante la migración y se
-# pueden retirar después del primer apply exitoso.
-# ---------------------------------------------------------------------------
-
 locals {
-  # Formato inmutable del claim sub de OIDC: los repositorios creados después
-  # de julio de 2026 incluyen los IDs numéricos de propietario y repositorio.
   github_sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repo_id}"
 }
 
@@ -39,7 +30,6 @@ resource "aws_iam_openid_connect_provider" "github" {
   }
 }
 
-# Confianza del rol CI/CD: build y despliegue en ambos ambientes.
 data "aws_iam_policy_document" "github_cicd_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -67,7 +57,6 @@ data "aws_iam_policy_document" "github_cicd_assume" {
   }
 }
 
-# Confianza del rol de Terraform: solo el job de apply, disparado por push a main.
 data "aws_iam_policy_document" "github_tf_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -109,7 +98,6 @@ resource "aws_iam_role" "tf_apply" {
   }
 }
 
-# Permisos del pipeline: publicar la imagen por digest y actualizar ECS.
 data "aws_iam_policy_document" "cicd" {
   statement {
     sid       = "AutorizacionECR"
@@ -180,8 +168,6 @@ resource "aws_iam_role_policy" "cicd" {
   policy = data.aws_iam_policy_document.cicd.json
 }
 
-# Permisos de terraform plan/apply: crear y actualizar la infraestructura,
-# incluida la gestión de los propios roles de CI/CD.
 data "aws_iam_policy_document" "tf_apply" {
   statement {
     sid       = "EstadoTerraformS3"
@@ -278,7 +264,7 @@ data "aws_iam_policy_document" "tf_apply" {
       "ecr:TagResource",
       "ecr:UntagResource",
     ]
-    resources = ["*"]
+    resources = ["arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/estrella-*"]
   }
 
   statement {
@@ -333,11 +319,16 @@ data "aws_iam_policy_document" "tf_apply" {
       "iam:DeleteOpenIDConnectProvider",
       "iam:AddClientIDToOpenIDConnectProvider",
       "iam:UpdateOpenIDConnectProviderThumbprint",
-      "iam:ListOpenIDConnectProviders",
       "iam:GetOpenIDConnectProvider",
       "iam:TagOpenIDConnectProvider",
       "iam:ListOpenIDConnectProviderTags",
     ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"]
+  }
+
+  statement {
+    sid       = "ListarProveedoresOIDC"
+    actions   = ["iam:ListOpenIDConnectProviders"]
     resources = ["*"]
   }
 
