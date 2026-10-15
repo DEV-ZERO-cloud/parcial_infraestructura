@@ -53,10 +53,10 @@ jobs:
 
       - name: Análisis Checkov
         if: steps.detect.outputs.has_config == 'true'
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          directory: infraestructura
-          framework: terraform
+        working-directory: .
+        run: |
+          pip install checkov
+          checkov --config-file .checkov.yaml --output cli
 
       - name: Informar configuración pendiente
         if: steps.detect.outputs.has_config != 'true'

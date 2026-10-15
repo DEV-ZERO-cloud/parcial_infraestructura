@@ -39,13 +39,8 @@ Abre http://localhost:8080 para usar la interfaz.
 - `HEALTHCHECK` contra `/health`.
 - Nombre y etiqueta publicados por CI: `ghcr.io/<owner>/<repo>:<commit sha>`.
 
-Para que `/health` informe el commit en la imagen publicada, el paso `build-push-action`
-de `.github/workflows/deploy.yml` debe pasar:
-
-```yaml
-build-args: |
-  GIT_COMMIT=${{ github.sha }}
-```
+El workflow de CI ya pasa `GIT_COMMIT=${{ github.sha }}` al `build-push-action`,
+así que la imagen publicada reporta el commit que la produjo.
 
 ### Recuperar el digest de la imagen publicada
 
@@ -54,3 +49,38 @@ docker buildx imagetools inspect ghcr.io/<owner>/<repo>:<commit sha>   # muestra
 ```
 
 El workflow también lo imprime y lo expone como salida `digest` del job `build-and-scan`.
+
+## Pipeline CI/CD
+
+El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+promueve la misma imagen entre ambientes, identificado por su digest:
+
+```
+push a main → build único (tag = SHA del commit)
+           → Trivy sobre la imagen por digest (umbral HIGH/CRITICAL)
+           → publicación en GHCR
+           → deploy-testing (misma referencia por digest) → prueba HTTP /health
+           → deploy-production (espera aprobación del Environment) → prueba HTTP
+           → resumen-promocion (compara digest publicado vs. confirmado en cada ambiente)
+```
+
+| Job | Qué hace |
+|---|---|
+| `build-and-scan` | Construye **una sola vez**, publica con tag del SHA, analiza con Trivy y expone el digest |
+| `deploy-testing` | Envía la referencia inmutable al adaptador y ejecuta la prueba HTTP |
+| `deploy-production` | Requiere aprobación del Environment `production`; promueve la misma referencia sin reconstruir |
+| `resumen-promocion` | Imprime y compara el digest publicado con el confirmado en cada ambiente; falla si difieren |
+
+Los jobs de despliegue solo se ejecutan cuando la variable de repositorio
+`DEPLOY_ADAPTER_READY` vale `true`; mientras no exista la infraestructura,
+el run valida build → Trivy → publicación y omite los despliegues.
+
+La configuración de Environments, secretos y aprobación está en
+[`docs/configuracion_github.md`](docs/configuracion_github.md) y el detalle
+de pruebas en [`docs/pruebas_workflows.md`](docs/pruebas_workflows.md).
+
+Para validar el mismo flujo en local (build con commit, `/health` y Trivy):
+
+```bash
+bash scripts/validar_pipeline_local.sh
+```

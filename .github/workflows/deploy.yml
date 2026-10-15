@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  packages: write
+  id-token: write
 
 concurrency:
   group: promocion-${{ github.ref }}
@@ -25,91 +25,140 @@ jobs:
       - name: Obtener código
         uses: actions/checkout@v4
 
-      - name: Preparar nombre de imagen
-        id: meta
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Iniciar sesión en GHCR
-        uses: docker/login-action@v3
+      - name: Configurar credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Iniciar sesión en Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configurar Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Construir y publicar una vez
+      - name: Construir y publicar una vez en ECR
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.image }}:${{ github.sha }}
+          tags: ${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:${{ github.sha }}
           labels: org.opencontainers.image.revision=${{ github.sha }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+
+      - name: Confirmar digest en ECR
+        id: publish
+        env:
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          COMMIT_TAG: ${{ github.sha }}
+          BUILD_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          image_url="$ECR_REGISTRY/$ECR_REPOSITORY"
+          ecr_digest="$(aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$COMMIT_TAG" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          test "$ecr_digest" = "$BUILD_DIGEST" || {
+            echo "El digest reportado por ECR ($ecr_digest) no coincide con el del build ($BUILD_DIGEST)"
+            exit 1
+          }
+          echo "image_ref=$image_url@$ecr_digest" >> "$GITHUB_OUTPUT"
+          echo "digest=$ecr_digest" >> "$GITHUB_OUTPUT"
+          echo "Imagen publicada para commit $COMMIT_TAG: $image_url@$ecr_digest"
+
+      - name: Preparar token de solo lectura para Trivy
+        run: echo "TRIVY_PASSWORD=$(aws ecr get-login-password)" >> "$GITHUB_ENV"
 
       - name: Analizar imagen por digest con Trivy
         uses: aquasecurity/trivy-action@0.28.0
+        env:
+          TRIVY_USERNAME: AWS
         with:
-          image-ref: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
+          image-ref: ${{ steps.publish.outputs.image_ref }}
           format: table
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: os,library
           severity: HIGH,CRITICAL
 
-      - name: Publicar referencia inmutable
-        id: publish
-        env:
-          IMAGE: ${{ steps.meta.outputs.image }}
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          echo "image_ref=$IMAGE@$DIGEST" >> "$GITHUB_OUTPUT"
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
-          echo "Imagen publicada para commit $GITHUB_SHA: $IMAGE@$DIGEST"
-
   deploy-testing:
     name: Desplegar y probar en testing
     needs: build-and-scan
     runs-on: ubuntu-latest
-    environment: testing
-    permissions:
-      contents: read
-      packages: read
+    environment: test
+    outputs:
+      confirmed_digest: ${{ steps.deploy.outputs.confirmed_digest }}
     steps:
-      - name: Enviar digest al adaptador de despliegue
+      - name: Configurar credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Desplegar el digest en ECS
         id: deploy
         env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
-          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          TASK_FAMILY: ${{ vars.TASK_FAMILY }}
           IMAGE_REF: ${{ needs.build-and-scan.outputs.image_ref }}
           EXPECTED_DIGEST: ${{ needs.build-and-scan.outputs.digest }}
         run: |
-          test -n "$DEPLOY_WEBHOOK_URL" || { echo "Falta el secreto DEPLOY_WEBHOOK_URL del ambiente testing"; exit 1; }
-          test -n "$DEPLOY_WEBHOOK_TOKEN" || { echo "Falta el secreto DEPLOY_WEBHOOK_TOKEN del ambiente testing"; exit 1; }
-          payload="$(jq -cn --arg image "$IMAGE_REF" '{image: $image}')"
-          response="$(curl --fail --silent --show-error \
-            --request POST \
-            --header 'Content-Type: application/json' \
-            --header "Authorization: Bearer $DEPLOY_WEBHOOK_TOKEN" \
-            --data "$payload" \
-            "$DEPLOY_WEBHOOK_URL")"
-          deployed_digest="$(printf '%s' "$response" | jq -er '.image_digest')"
+          task_definition="$(aws ecs describe-task-definition \
+            --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition' \
+            --output json)"
+          new_task_definition="$(printf '%s' "$task_definition" | jq \
+            --arg image "$IMAGE_REF" \
+            'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].image = $image')"
+          new_revision="$(aws ecs register-task-definition \
+            --cli-input-json "$new_task_definition" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$new_revision" \
+            --force-new-deployment >/dev/null
+          echo "Esperando estabilidad del servicio (hasta 12 minutos)..."
+          deadline=$(( $(date +%s) + 720 ))
+          while true; do
+            if aws ecs wait services-stable \
+              --cluster "$ECS_CLUSTER" \
+              --services "$ECS_SERVICE" >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "El servicio no alcanzó estado estable dentro del tiempo límite"
+              exit 1
+            fi
+            sleep 15
+          done
+          deployed_image="$(aws ecs describe-task-definition \
+            --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition.containerDefinitions[0].image' \
+            --output text)"
+          deployed_digest="${deployed_image##*@}"
           test "$deployed_digest" = "$EXPECTED_DIGEST" || {
-            echo "El adaptador confirmó un digest distinto al solicitado"
+            echo "La tarea desplegada en testing usa un digest distinto al solicitado"
             exit 1
           }
-          echo "Despliegue en testing confirmado: $IMAGE_REF"
+          echo "Despliegue en testing confirmado: $deployed_image"
+          echo "confirmed_digest=$deployed_digest" >> "$GITHUB_OUTPUT"
 
       - name: Verificar salud HTTP
         env:
-          HEALTH_URL: ${{ vars.HEALTH_URL }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
-          test -n "$HEALTH_URL" || { echo "Falta la variable HEALTH_URL del ambiente testing"; exit 1; }
+          test -n "$APP_URL" || { echo "Falta la variable APP_URL del ambiente test"; exit 1; }
           curl --fail --silent --show-error \
             --retry 12 --retry-delay 5 --retry-all-errors \
-            --output /dev/null "$HEALTH_URL"
-          echo "Prueba HTTP exitosa: $HEALTH_URL"
+            --output /dev/null "$APP_URL/health"
+          echo "Prueba HTTP exitosa: $APP_URL/health"
 
   deploy-production:
     name: Promover el mismo digest a production
@@ -118,39 +167,107 @@ jobs:
       - deploy-testing
     runs-on: ubuntu-latest
     environment: production
-    permissions:
-      contents: read
-      packages: read
+    outputs:
+      confirmed_digest: ${{ steps.deploy.outputs.confirmed_digest }}
     steps:
-      - name: Enviar el mismo digest al adaptador de despliegue
+      - name: Configurar credenciales AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Promover el mismo digest a ECS
+        id: deploy
         env:
-          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
-          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+          TASK_FAMILY: ${{ vars.TASK_FAMILY }}
           IMAGE_REF: ${{ needs.build-and-scan.outputs.image_ref }}
           EXPECTED_DIGEST: ${{ needs.build-and-scan.outputs.digest }}
         run: |
-          test -n "$DEPLOY_WEBHOOK_URL" || { echo "Falta el secreto DEPLOY_WEBHOOK_URL del ambiente production"; exit 1; }
-          test -n "$DEPLOY_WEBHOOK_TOKEN" || { echo "Falta el secreto DEPLOY_WEBHOOK_TOKEN del ambiente production"; exit 1; }
-          payload="$(jq -cn --arg image "$IMAGE_REF" '{image: $image}')"
-          response="$(curl --fail --silent --show-error \
-            --request POST \
-            --header 'Content-Type: application/json' \
-            --header "Authorization: Bearer $DEPLOY_WEBHOOK_TOKEN" \
-            --data "$payload" \
-            "$DEPLOY_WEBHOOK_URL")"
-          deployed_digest="$(printf '%s' "$response" | jq -er '.image_digest')"
+          task_definition="$(aws ecs describe-task-definition \
+            --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition' \
+            --output json)"
+          new_task_definition="$(printf '%s' "$task_definition" | jq \
+            --arg image "$IMAGE_REF" \
+            'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].image = $image')"
+          new_revision="$(aws ecs register-task-definition \
+            --cli-input-json "$new_task_definition" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)"
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$new_revision" \
+            --force-new-deployment >/dev/null
+          echo "Esperando estabilidad del servicio (hasta 12 minutos)..."
+          deadline=$(( $(date +%s) + 720 ))
+          while true; do
+            if aws ecs wait services-stable \
+              --cluster "$ECS_CLUSTER" \
+              --services "$ECS_SERVICE" >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "El servicio no alcanzó estado estable dentro del tiempo límite"
+              exit 1
+            fi
+            sleep 15
+          done
+          deployed_image="$(aws ecs describe-task-definition \
+            --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition.containerDefinitions[0].image' \
+            --output text)"
+          deployed_digest="${deployed_image##*@}"
           test "$deployed_digest" = "$EXPECTED_DIGEST" || {
-            echo "El adaptador de production confirmó un digest distinto al solicitado"
+            echo "La tarea desplegada en production usa un digest distinto al solicitado"
             exit 1
           }
-          echo "Promoción a production confirmada: $IMAGE_REF"
+          echo "Promoción a production confirmada: $deployed_image"
+          echo "confirmed_digest=$deployed_digest" >> "$GITHUB_OUTPUT"
 
       - name: Verificar salud HTTP en production
         env:
-          HEALTH_URL: ${{ vars.HEALTH_URL }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
-          test -n "$HEALTH_URL" || { echo "Falta la variable HEALTH_URL del ambiente production"; exit 1; }
+          test -n "$APP_URL" || { echo "Falta la variable APP_URL del ambiente production"; exit 1; }
           curl --fail --silent --show-error \
             --retry 12 --retry-delay 5 --retry-all-errors \
-            --output /dev/null "$HEALTH_URL"
-          echo "Prueba HTTP exitosa: $HEALTH_URL"
+            --output /dev/null "$APP_URL/health"
+          echo "Prueba HTTP exitosa: $APP_URL/health"
+
+  resumen-promocion:
+    name: Resumen de promoción por digest
+    needs:
+      - build-and-scan
+      - deploy-testing
+      - deploy-production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Comparar digests de ambos ambientes
+        env:
+          TAG: ${{ github.sha }}
+          IMAGE_REF: ${{ needs.build-and-scan.outputs.image_ref }}
+          DIGEST_PUBLICADO: ${{ needs.build-and-scan.outputs.digest }}
+          DIGEST_TESTING: ${{ needs.deploy-testing.outputs.confirmed_digest }}
+          DIGEST_PRODUCTION: ${{ needs.deploy-production.outputs.confirmed_digest }}
+        run: |
+          echo "Tag promovido: $TAG"
+          echo "Referencia publicada: $IMAGE_REF"
+          echo "Digest publicado en ECR: $DIGEST_PUBLICADO"
+          echo "Digest confirmado en testing: $DIGEST_TESTING"
+          echo "Digest confirmado en production: $DIGEST_PRODUCTION"
+          test -n "$DIGEST_TESTING" || { echo "Digest de testing vacío"; exit 1; }
+          test -n "$DIGEST_PRODUCTION" || { echo "Digest de production vacío"; exit 1; }
+          test "$DIGEST_PUBLICADO" = "$DIGEST_TESTING" || {
+            echo "El digest de testing no coincide con el publicado"
+            exit 1
+          }
+          test "$DIGEST_PUBLICADO" = "$DIGEST_PRODUCTION" || {
+            echo "El digest de production no coincide con el publicado"
+            exit 1
+          }
+          echo "Evidencia: pruebas y producción usan exactamente el mismo digest."
