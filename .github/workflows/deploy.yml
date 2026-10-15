@@ -157,14 +157,14 @@ jobs:
 
       - name: Verificar salud HTTP
         env:
-          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ALB_NAME: ${{ vars.ALB_NAME }}
         run: |
-          test -n "$ECS_CLUSTER" || { echo "Falta la variable ECS_CLUSTER del ambiente test"; exit 1; }
+          test -n "$ALB_NAME" || { echo "Falta la variable ALB_NAME del ambiente test"; exit 1; }
           alb_dns="$(aws elbv2 describe-load-balancers \
-            --names "${ECS_CLUSTER}-alb" \
+            --names "$ALB_NAME" \
             --query 'LoadBalancers[0].DNSName' \
             --output text)"
-          test -n "$alb_dns" || { echo "No se encontró el balanceador ${ECS_CLUSTER}-alb"; exit 1; }
+          test -n "$alb_dns" -a "$alb_dns" != "None" || { echo "No se encontró el balanceador $ALB_NAME"; exit 1; }
           curl --fail --silent --show-error \
             --retry 12 --retry-delay 5 --retry-all-errors \
             --output /dev/null "http://${alb_dns}/health"
@@ -239,14 +239,14 @@ jobs:
 
       - name: Verificar salud HTTP en production
         env:
-          ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+          ALB_NAME: ${{ vars.ALB_NAME }}
         run: |
-          test -n "$ECS_CLUSTER" || { echo "Falta la variable ECS_CLUSTER del ambiente production"; exit 1; }
+          test -n "$ALB_NAME" || { echo "Falta la variable ALB_NAME del ambiente production"; exit 1; }
           alb_dns="$(aws elbv2 describe-load-balancers \
-            --names "${ECS_CLUSTER}-alb" \
+            --names "$ALB_NAME" \
             --query 'LoadBalancers[0].DNSName' \
             --output text)"
-          test -n "$alb_dns" || { echo "No se encontró el balanceador ${ECS_CLUSTER}-alb"; exit 1; }
+          test -n "$alb_dns" -a "$alb_dns" != "None" || { echo "No se encontró el balanceador $ALB_NAME"; exit 1; }
           curl --fail --silent --show-error \
             --retry 12 --retry-delay 5 --retry-all-errors \
             --output /dev/null "http://${alb_dns}/health"
